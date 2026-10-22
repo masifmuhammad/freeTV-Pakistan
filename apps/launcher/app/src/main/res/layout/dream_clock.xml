@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Screensaver (ClockDream): clock and date that drift around a black screen over an ambient glow, or over
-     Home's M3E shapes (added in code, behind dreamAmbient). -->
+<!-- Screensaver (ClockDream), made to be read from across the room: the clock and the dates at the top
+     centre, and two cards at the bottom, the next prayer and the air quality, over an ambient glow or Home's
+     M3E shapes (added in code, behind dreamAmbient). The whole page shifts a few dp every minute, which keeps
+     anything from burning in without moving the clock away from the middle. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/dreamRoot"
     android:layout_width="match_parent"
@@ -12,53 +14,159 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <LinearLayout
-        android:id="@+id/dreamContent"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
+    <FrameLayout
+        android:id="@+id/dreamPage"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
         <LinearLayout
+            android:id="@+id/dreamContent"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:baselineAligned="true">
+            android:layout_gravity="top|center_horizontal"
+            android:layout_marginTop="32dp"
+            android:gravity="center_horizontal"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:baselineAligned="true">
+
+                <TextClock
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:format12Hour="h:mm"
+                    android:format24Hour="HH:mm"
+                    android:textColor="#E6FFFFFF"
+                    android:textSize="128sp"
+                    android:fontFamily="@font/sans_display"
+                    android:letterSpacing="-0.04"
+                    android:includeFontPadding="false" />
+
+                <TextClock
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:format12Hour="a"
+                    android:format24Hour=""
+                    android:textColor="#B3FFFFFF"
+                    android:textSize="30sp"
+                    android:fontFamily="@font/sans_medium"
+                    android:letterSpacing="0.06"
+                    android:textAllCaps="true" />
+            </LinearLayout>
 
             <TextClock
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:format12Hour="h:mm"
-                android:format24Hour="HH:mm"
-                android:textColor="#E6FFFFFF"
-                android:textSize="120sp"
-                android:fontFamily="@font/sans_display"
-                android:letterSpacing="-0.04"
-                android:includeFontPadding="false" />
-
-            <TextClock
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
-                android:format12Hour="a"
-                android:format24Hour=""
-                android:textColor="#99FFFFFF"
+                android:layout_marginTop="10dp"
+                android:format12Hour="@string/date_format"
+                android:format24Hour="@string/date_format"
+                android:textColor="#CCFFFFFF"
                 android:textSize="22sp"
                 android:fontFamily="@font/sans_medium"
-                android:letterSpacing="0.08"
+                android:letterSpacing="0.12"
                 android:textAllCaps="true" />
+
+            <TextView
+                android:id="@+id/dreamHijri"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textColor="#8CFFFFFF"
+                android:textSize="18sp"
+                android:fontFamily="@font/sans_regular"
+                android:letterSpacing="0.08" />
+
+            <!-- Music playing in the background (ClockDream.showTrack): the art and the track. -->
+            <LinearLayout
+                android:id="@+id/dreamNow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <ImageView
+                    android:id="@+id/dreamNowArt"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="@null" />
+
+                <TextView
+                    android:id="@+id/dreamNowText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:maxWidth="640dp"
+                    android:textSize="21sp"
+                    android:fontFamily="@font/sans_medium"
+                    android:singleLine="true"
+                    android:ellipsize="end"
+                    android:includeFontPadding="false" />
+            </LinearLayout>
         </LinearLayout>
 
-        <TextClock
+        <LinearLayout
+            android:id="@+id/dreamCards"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="6dp"
-            android:layout_marginTop="4dp"
-            android:format12Hour="@string/date_format"
-            android:format24Hour="@string/date_format"
-            android:textColor="#8CFFFFFF"
-            android:textSize="18sp"
-            android:fontFamily="@font/sans_regular"
-            android:letterSpacing="0.14"
-            android:textAllCaps="true" />
-    </LinearLayout>
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="44dp"
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/dreamPrayerCard"
+                style="@style/DreamCard">
+
+                <com.gathin.tvhome.ShapeBadge
+                    android:id="@+id/dreamPrayerBadge"
+                    style="@style/DreamBadge" />
+
+                <LinearLayout style="@style/DreamCardText">
+
+                    <TextView
+                        style="@style/DreamCardLabel"
+                        android:text="@string/dream_next_prayer" />
+
+                    <TextView
+                        android:id="@+id/dreamPrayerValue"
+                        style="@style/DreamCardValue" />
+
+                    <TextView
+                        android:id="@+id/dreamPrayerDetail"
+                        style="@style/DreamCardDetail" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/dreamAirCard"
+                style="@style/DreamCard"
+                android:layout_marginStart="28dp">
+
+                <com.gathin.tvhome.ShapeBadge
+                    android:id="@+id/dreamAirBadge"
+                    style="@style/DreamBadge" />
+
+                <LinearLayout style="@style/DreamCardText">
+
+                    <TextView
+                        style="@style/DreamCardLabel"
+                        android:text="@string/air_quality" />
+
+                    <TextView
+                        android:id="@+id/dreamAirValue"
+                        style="@style/DreamCardValue" />
+
+                    <TextView
+                        android:id="@+id/dreamAirDetail"
+                        style="@style/DreamCardDetail" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
 </FrameLayout>

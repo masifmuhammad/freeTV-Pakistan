@@ -120,12 +120,14 @@ final class Palette {
     }
 
     /**
-     * Follows the system's appearance (call before the first scheme is built, and again when the
-     * configuration changes). An undefined night mode counts as dark, as Google TV is.
+     * Follows Launcher settings' Light or dark (HomeLook): call before the first scheme is built, when the
+     * configuration changes, and once a minute on Home. The system's night mode is not read: TCL's G03
+     * firmware reports "no" all the time, which would keep Home light.
      */
     static void loadDarkMode(android.content.Context context) {
-        int night = context.getResources().getConfiguration().uiMode & android.content.res.Configuration.UI_MODE_NIGHT_MASK;
-        setDarkMode(night != android.content.res.Configuration.UI_MODE_NIGHT_NO);
+        android.content.SharedPreferences choices =
+                context.getSharedPreferences(Config.SETTINGS_NAME, android.content.Context.MODE_PRIVATE);
+        setDarkMode(HomeLook.dark(choices, java.time.LocalTime.now().getHour()));
     }
 
     /** The same seed in the dark scheme, for surfaces that must stay dark (the screensaver). */

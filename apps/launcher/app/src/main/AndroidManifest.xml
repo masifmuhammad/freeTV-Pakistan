@@ -21,6 +21,8 @@
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- The Settings panel's "Free up memory": stops apps' cached background processes. -->
+    <uses-permission android:name="android.permission.KILL_BACKGROUND_PROCESSES" />
 
     <!-- Android 11+ package visibility: lets the launcher list the TV apps it shows as tiles, and the
          apps that declare a module card (docs/specs/card.md). -->
@@ -112,6 +114,7 @@
         <service
             android:name=".HomeKeyService"
             android:label="@string/home_key_name"
+            android:directBootAware="true"
             android:exported="true"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
@@ -151,6 +154,25 @@
         </service>
         <receiver
             android:name=".InstallStatusReceiver"
+            android:exported="false" />
+        <!-- Lets Home's now playing bar and the screensaver read media sessions once allowed over adb
+             (cmd notification allow_listener); reads no notifications. -->
+        <service
+            android:name=".NowPlayingListener"
+            android:exported="true"
+            android:label="@string/now_playing"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+        <!-- The sleep timer running out (Settings panel). -->
+        <receiver
+            android:name=".Sleep$Alarm"
+            android:exported="false" />
+        <!-- A prayer time (or ten minutes before it): the reminder banner. -->
+        <receiver
+            android:name=".PrayerReminder$Alarm"
             android:exported="false" />
     </application>
 </manifest>

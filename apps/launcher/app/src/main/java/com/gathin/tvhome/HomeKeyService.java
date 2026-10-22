@@ -1,14 +1,19 @@
 package com.gathin.tvhome;
 
 import android.accessibilityservice.AccessibilityService;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.os.UserManager;
 import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityEvent;
 
@@ -50,16 +55,82 @@ public class HomeKeyService extends AccessibilityService {
         openHome();
     };
 
+    /** The bound service, for Turn off and the sleep timer; null while it is not bound. */
+    private static HomeKeyService running;
+    /** Waits for the user to unlock when Android binds this service at boot; null once the config is read. */
+    private BroadcastReceiver unlockReceiver;
+    private boolean configLoaded;
+
     @Override
     protected void onServiceConnected() {
         super.onServiceConnected();
+        running = this;
         settingsScancodes = getResources().getIntArray(R.array.settings_key_scancodes);
+        // The service is directBootAware: Android 11 skips a service that is not while the user is still
+        // locked at boot, writes accessibility_enabled=0 and, on TCL G03 firmware, never binds it after the
+        // unlock. Config.load reads credential-protected storage, so wait for the unlock before reading it.
+        UserManager users = getSystemService(UserManager.class);
+        if (users.isUserUnlocked()) {
+            loadConfig();
+            return;
+        }
+        unlockReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                stopWaitingForUnlock();
+                loadConfig();
+            }
+        };
+        registerReceiver(unlockReceiver, new IntentFilter(Intent.ACTION_USER_UNLOCKED));
+        // The unlock may have happened between the check and the registration.
+        if (users.isUserUnlocked()) {
+            stopWaitingForUnlock();
+            loadConfig();
+        }
+    }
+
+    private void stopWaitingForUnlock() {
+        if (unlockReceiver == null) return;
+        unregisterReceiver(unlockReceiver);
+        unlockReceiver = null;
+    }
+
+    private void loadConfig() {
         // Keycodes and the panel choice can also come from a theme; theme.sh restarts this service.
         Config config = Config.load(this);
         settingsKeycodes = config.settingsKeycodes;
         settingsPanel = config.settingsKeyPanel;
         appKeys = RemoteKeys.parseAppKeys(config.appKeys);
-        if (SystemClock.elapsedRealtime() < JUST_BOOTED_MS) openHome();
+        configLoaded = true;
+        // This service runs from boot to standby, so it sets the first prayer reminder of the session.
+        PrayerReminder.schedule(this);
+        // Only where another app owns Home: when it is this launcher, opening Home here would pull away an
+        // app started right after boot (YouTube, from the remote).
+        if (SystemClock.elapsedRealtime() < JUST_BOOTED_MS && stockHome() != null) openHome();
+    }
+
+    /** The bound service, whose window token lets PrayerReminder draw over other apps; null when not bound. */
+    static AccessibilityService bound() {
+        return running;
+    }
+
+    /** Puts the TV in standby, as the remote's power button does; false when the service is not bound. */
+    static boolean lockScreen() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && running != null
+                && running.performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN);
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        running = null;
+        return super.onUnbind(intent);
+    }
+
+    @Override
+    public void onDestroy() {
+        stopWaitingForUnlock();
+        if (running == this) running = null;
+        super.onDestroy();
     }
 
     private boolean isSettingsKey(KeyEvent event) {
@@ -71,6 +142,7 @@ public class HomeKeyService extends AccessibilityService {
 
     @Override
     protected boolean onKeyEvent(KeyEvent event) {
+        if (!configLoaded) return false;
         // The stock launcher handled the remote's Settings button; with it disabled the button does nothing.
         if (isSettingsKey(event)) {
             if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) {

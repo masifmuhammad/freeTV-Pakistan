@@ -22,6 +22,31 @@ final class HomeLook {
     /** Seeds offered in Launcher settings, in the order of R.array.look_seed_names: M3's baseline violet first. */
     static final int[] SEEDS = {0xFF6750A4, 0xFF0061A4, 0xFF006A6A, 0xFF386A20, 0xFF8B5000, 0xFF984061, 0xFFB3261E};
 
+    static final String MODE_KEY = "appearance";
+    /** Light by day and dark at night, always light, or always dark. */
+    static final String AUTO = "auto", LIGHT = "light", DARK = "dark";
+    static final String[] MODES = {AUTO, LIGHT, DARK};
+    // ponytail: fixed hours, not Lahore's sunset (about 5 PM in winter, 7 PM in summer); the weather
+    // widget's place could give a real sunset if that ever matters.
+    private static final int DARK_FROM_HOUR = 18, DARK_UNTIL_HOUR = 6;
+
+    static String mode(SharedPreferences choices) {
+        String chosen = choices.getString(MODE_KEY, AUTO);
+        for (String known : MODES) if (known.equals(chosen)) return known;
+        return AUTO;
+    }
+
+    /** Whether Home is dark at that hour of the day. */
+    static boolean dark(SharedPreferences choices, int hour) {
+        return dark(mode(choices), hour);
+    }
+
+    static boolean dark(String mode, int hour) {
+        if (LIGHT.equals(mode)) return false;
+        if (DARK.equals(mode)) return true;
+        return hour >= DARK_FROM_HOUR || hour < DARK_UNTIL_HOUR;
+    }
+
     static String backdrop(SharedPreferences choices) {
         String chosen = choices.getString(BACKDROP_KEY, SHAPES);
         for (String known : BACKDROPS) if (known.equals(chosen)) return known;

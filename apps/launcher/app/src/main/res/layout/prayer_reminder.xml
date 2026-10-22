@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The prayer reminder banner (PrayerReminder), shown at the top centre over any app; PrayerReminder gives it
+     its glass background and colours from the scheme. Sized to be read from across the room. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:minWidth="420dp"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="22dp"
+    android:paddingEnd="36dp"
+    android:paddingTop="20dp"
+    android:paddingBottom="20dp">
+
+    <com.gathin.tvhome.ShapeBadge
+        android:id="@+id/reminderBadge"
+        android:layout_width="64dp"
+        android:layout_height="64dp" />
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/reminderTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="34sp"
+            android:fontFamily="@font/sans_display"
+            android:fontFeatureSettings="tnum"
+            android:singleLine="true"
+            android:includeFontPadding="false" />
+
+        <TextView
+            android:id="@+id/reminderMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:textSize="18sp"
+            android:fontFamily="@font/sans_regular"
+            android:singleLine="true"
+            android:includeFontPadding="false" />
+    </LinearLayout>
+</LinearLayout>

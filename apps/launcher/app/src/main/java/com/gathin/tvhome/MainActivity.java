@@ -109,6 +109,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             Palette.publish(Palette.fromBackground(Config.load(this).backgroundColor));
         } else if (HomeLook.BACKDROP_KEY.equals(key)) {
             applyBackdrop(HomeLook.backdrop(preferences));
+        } else if (HomeLook.MODE_KEY.equals(key)) {
+            followAppearance();
         }
     };
     private boolean rtlAppGrid;
@@ -233,6 +235,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private TextView editBarTitle, editBarHint;
     /** The widgets between the header and the dock; shown only with the dock layout. */
     private WidgetShelf widgets;
+    /** Music playing in the background, between the shelf and the dock. */
+    private NowPlayingBar nowBar;
     private FocusIndicator focusIndicator;
     /** The clock's divider line, tinted with the scheme. */
     private View clockDivider;
@@ -305,6 +309,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         public void run() {
             updateGreeting();
             updateWifiLabel();
+            followAppearance();
             sky.update();
             wallpaperPlayer.update();
             if (widgets != null) widgets.tick();
@@ -506,12 +511,31 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 return reordering || beginReorder();
             }
         });
+        nowBar = new NowPlayingBar(gridFrame, animations && !reducedMotion, new NowPlayingBar.Neighbours() {
+            @Override
+            public void up() {
+                if (!(dockRow && widgets.focusFromDock(lastFocused % COLUMNS))) {
+                    findViewById(R.id.btnSettings).requestFocus();
+                }
+                grid.playSoundEffect(SoundEffectConstants.NAVIGATION_UP);
+            }
+
+            @Override
+            public void down() {
+                focusTile(Math.min(lastFocused % COLUMNS, Math.max(0, adapter.dockFilled() - 1)));
+                grid.playSoundEffect(SoundEffectConstants.NAVIGATION_DOWN);
+            }
+        });
         widgets.setOnDown(column -> {
-            focusTile(Math.min(column, Math.max(0, adapter.dockFilled() - 1)));
+            // The now playing bar sits between the widgets and the dock.
+            if (!nowBar.focus()) focusTile(Math.min(column, Math.max(0, adapter.dockFilled() - 1)));
             grid.playSoundEffect(SoundEffectConstants.NAVIGATION_DOWN);
         });
-        grid.getViewTreeObserver().addOnGlobalLayoutListener(() -> widgets.align(grid, COLUMNS,
-                grid.getTop() + grid.getPaddingTop() - (int) (DockDecoration.PADDING_DP * density)));
+        grid.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+            int dockTop = grid.getTop() + grid.getPaddingTop() - (int) (DockDecoration.PADDING_DP * density);
+            widgets.align(grid, COLUMNS, dockTop);
+            nowBar.place(widgets.bottom(), dockTop);
+        });
 
         // tvOS layout: push the dock row towards the bottom of the screen, leaving room for
         // rows_below_dock grid rows under it; the rest of the grid stays below until you press Down.
@@ -524,6 +548,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 // Every scroll, focus on a tile or not, or the backdrop's parallax drifts from the grid.
                 if (backdrop != null) backdrop.onGridScrolled(dy);
                 widgets.onGridScrolled(rv);
+                nowBar.onGridScrolled(rv.computeVerticalScrollOffset());
                 fadeHeaderScrim();
                 if (!glassShown) return;
                 glassTargetY -= dy;
@@ -556,6 +581,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
         btnInputs = findViewById(R.id.btnInputs);
         View btnSettings = findViewById(R.id.btnSettings);
+        // Control Center: the panel the remote's gear opens (sleep timer, turn off, memory, AirPlay).
+        View btnControl = findViewById(R.id.btnControl);
+        btnControl.setOnClickListener(v -> startActivity(new Intent(this, QuickSettingsActivity.class)));
         btnInputs.setOnClickListener(v -> showInputs());
         btnWifi.setOnClickListener(v -> openNetworkPill());
         btnWifi.setOnLongClickListener(v -> {
@@ -584,19 +612,20 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
                 focusTile(lastFocused % COLUMNS);
                 return true;
             }
-            int firstButton = btnInputs.getVisibility() == View.VISIBLE ? R.id.btnInputs : R.id.btnWifi;
+            int firstButton = R.id.btnControl;
             int leftButton = rtlMenuBar ? R.id.btnSettings : firstButton;
             int rightButton = rtlMenuBar ? firstButton : R.id.btnSettings;
             if (keyCode == KeyEvent.KEYCODE_DPAD_LEFT) return v.getId() == leftButton;
             return keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && v.getId() == rightButton;
         };
+        btnControl.setOnKeyListener(pillKeys);
         btnInputs.setOnKeyListener(pillKeys);
         btnWifi.setOnKeyListener(pillKeys);
         btnSettings.setOnKeyListener(pillKeys);
         btnReorder.setOnKeyListener(pillKeys);
         // The header buttons form an M3E connected button group: icon-only segments that grow into labelled pills
         // on focus. Which are visible changes (Inputs appears at boot), so the shapes are set again on layout.
-        headerButtons = new View[]{btnInputs, btnWifi, btnReorder, btnSettings};
+        headerButtons = new View[]{btnControl, btnInputs, btnWifi, btnReorder, btnSettings};
         for (View button : headerButtons) {
             LabelReveal reveal = new LabelReveal((TextView) button, animations, reducedMotion);
             reveals.add(reveal);
@@ -705,6 +734,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         cameBackFromBackground = false;
         Palette.loadDarkMode(this);
         updateWidgets();
+        nowBar.start();
         if (Palette.current() != null && Palette.current() != shownPalette) applyPalette(Palette.current());
         // The shapes start turning once the return transition is over, so they never compete with it.
         if (backdrop != null) handler.postDelayed(startBackdrop, BACKDROP_RESUME_DELAY_MS);
@@ -951,6 +981,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     protected void onPause() {
         super.onPause();
         widgets.stop();
+        nowBar.stop();
         handler.removeCallbacks(startBackdrop);
         handler.removeCallbacks(restBackdrop);
         if (backdrop != null) backdrop.stop();
@@ -1316,6 +1347,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         paintHeaderScrim(p);
         if (backdrop != null) backdrop.setPalette(p);
         if (widgets != null) widgets.setPalette(p);
+        if (nowBar != null) nowBar.setPalette(p);
         if (editBar != null) {
             GradientDrawable bar = new GradientDrawable();
             bar.setColor(p.secondaryContainer);
@@ -1501,6 +1533,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         M3Skin.apply(panel, Palette.currentOrBaseline(), animations, reducedMotion);
     }
 
+    /** Light or dark as Launcher settings and the hour say; Home repaints only when it changes. */
+    private void followAppearance() {
+        boolean wasDark = Palette.darkMode();
+        Palette.loadDarkMode(this);
+        if (Palette.darkMode() != wasDark) applyBackdrop(HomeLook.backdrop(settingsPreferences));
+    }
+
     /** Sets the shapes moving, or keeps them moving, until BACKDROP_IDLE_MS without a key. */
     private void wakeBackdrop() {
         if (backdrop == null) return;
@@ -1516,7 +1555,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private void applyBackdrop(String style) {
         boolean shapes = HomeLook.SHAPES.equals(style) && !wallpaperPlayer.showing();
         if (shapes && backdrop == null) {
-            backdrop = new ExpressiveBackdrop(this, animations, reducedMotion, advancedEffects);
+            // The shapes drift on every frame for 30 s after each key, which a Mali-G31 (TCL G03) cannot hold
+            // at 50 Hz while focus moves: they move only with Advanced effects, and stay put otherwise.
+            backdrop = new ExpressiveBackdrop(this, animations && advancedEffects, reducedMotion, advancedEffects);
             root.addView(backdrop, 0, new FrameLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
             if (shownPalette != null) backdrop.setPalette(shownPalette);
@@ -1901,8 +1942,9 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         }
         if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
             if (position < COLUMNS) {
-                // Dock row: up to the widget over this column, or the top bar when there is no shelf.
-                if (dockRow && widgets.focusFromDock(position)) {
+                // Dock row: up to the now playing bar when music plays, else the widget over this column,
+                // or the top bar when there is no shelf.
+                if (nowBar.focus() || dockRow && widgets.focusFromDock(position)) {
                     grid.playSoundEffect(SoundEffectConstants.NAVIGATION_UP);
                     return true;
                 }

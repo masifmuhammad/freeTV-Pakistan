@@ -75,6 +75,7 @@
                 <TextView style="@style/SettingsSheetLabel" android:text="@string/settings_group_look" />
                 <LinearLayout style="@style/SettingsSheetGroup">
                     <TextView android:id="@+id/colorChoice" style="@style/SettingsListItem" />
+                    <TextView android:id="@+id/modeChoice" style="@style/SettingsListItem" />
                     <TextView android:id="@+id/backdropChoice" style="@style/SettingsListItem" />
                 </LinearLayout>
 

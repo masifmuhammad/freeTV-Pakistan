@@ -218,6 +218,39 @@
     </com.gathin.tvhome.WidgetCard>
 
     <com.gathin.tvhome.WidgetCard
+        android:id="@+id/widgetPrayer"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/widget_card_height"
+        android:layout_gravity="center_vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/prayerLabel"
+                style="@style/WidgetLabel"
+                android:text="@string/prayer_times" />
+
+            <TextView
+                android:id="@+id/prayerTime"
+                style="@style/WidgetValue"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                android:fontFeatureSettings="tnum"
+                android:text="–" />
+
+            <TextView
+                android:id="@+id/prayerDetail"
+                style="@style/WidgetDetail" />
+        </LinearLayout>
+    </com.gathin.tvhome.WidgetCard>
+
+    <com.gathin.tvhome.WidgetCard
         android:id="@+id/widgetAdd"
         android:layout_width="0dp"
         android:layout_height="@dimen/widget_card_height"

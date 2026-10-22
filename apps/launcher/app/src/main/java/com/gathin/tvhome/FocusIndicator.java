@@ -27,7 +27,8 @@ import androidx.recyclerview.widget.RecyclerView;
  */
 final class FocusIndicator extends RecyclerView.ItemDecoration {
 
-    static final float PADDING_DP = 4f;
+    /** A thin ring rather than a thick band: 4dp read as a heavy frame on a 1080p TV. */
+    static final float PADDING_DP = 2.5f;
     static final float POP_FROM_DP = 1f;
     /** How far it reaches while its tile is carried in Edit Home: lifted, still inside the dock's 12dp padding. */
     static final float LIFT_DP = 8f;

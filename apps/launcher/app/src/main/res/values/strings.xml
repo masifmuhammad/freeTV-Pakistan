@@ -91,10 +91,12 @@
     <string name="widgets">Widgets</string>
     <string name="weather">Weather</string>
     <string name="widget_system">This TV</string>
-    <string name="widget_ram">Memory</string>
+    <!-- Short: five cards over a five-app dock leave each one about 110dp for name and value. -->
+    <string name="widget_ram">RAM</string>
     <string name="widget_storage">Storage</string>
-    <string name="widget_used_of">%1$s / %2$s</string>
-    <string name="lunar_calendar">Lunar calendar</string>
+    <string name="widget_used_of">%1$s/%2$s</string>
+    <string name="lunar_calendar">Hijri calendar</string>
+    <string name="hijri_month_year">%1$s %2$d</string>
     <string name="lunar_year">Lunar year %s</string>
     <string name="lunar_leap">%s (leap)</string>
     <string name="holiday_in_days">%1$s in %2$d days</string>
@@ -157,6 +159,58 @@
     <string name="setting_countdown">Count down to</string>
     <string name="countdown_next">Next holiday</string>
     <string name="countdown_tet">Tết only</string>
+    <string name="countdown_eid">Eid only</string>
+    <string name="setting_hijri_date">Hijri date</string>
+    <string name="hijri_offset_minus_2">2 days behind Saudi</string>
+    <string name="hijri_offset_minus_1">1 day behind Saudi (Pakistan)</string>
+    <string name="hijri_offset_zero">Same as Saudi</string>
+    <string name="hijri_offset_plus_1">1 day ahead of Saudi</string>
+
+    <!-- Prayer times widget and screensaver line -->
+    <string name="prayer_times">Prayer times</string>
+    <string name="prayer_in">in %s</string>
+    <string name="setting_asr">Asr time</string>
+    <string name="asr_hanafi">Hanafi (later)</string>
+    <string name="asr_standard">Standard (Shafi\'i)</string>
+    <string name="setting_reminders">Reminders</string>
+    <string name="reminders_at_time">At prayer time</string>
+    <string name="reminders_early">Also 10 min before</string>
+    <string name="reminders_off">Off</string>
+    <string name="reminder_preview">Show a reminder now</string>
+    <string name="reminder_message">It\'s time for %s prayer</string>
+    <string name="reminder_early_title">%1$s in %2$d minutes</string>
+    <string name="reminder_early_message">At %s</string>
+    <string name="now_playing">Now playing</string>
+    <string name="now_playing_toggle">Play or pause</string>
+    <string name="now_playing_close">Stop and close</string>
+    <string name="dream_next_prayer">Next prayer</string>
+    <string name="dream_prayer_detail">%1$s · in %2$s</string>
+    <string name="dream_air_detail">%1$s · PM2.5 %2$d</string>
+    <string name="dream_hijri">%1$d %2$s %3$d AH</string>
+
+    <!-- TV check (Control Center): what a firmware update may have undone, fixed with the remote -->
+    <string name="tv_check">TV check</string>
+    <string name="tv_check_ok">All good</string>
+    <string name="tv_check_helper">Turn on remote buttons</string>
+    <string name="tv_check_home">Make this the Home app</string>
+    <string name="tv_check_music">Music bar needs a PC</string>
+    <string name="tv_check_helper_help">Open Home button, switch it on, then press Home</string>
+    <string name="tv_check_music_help">Everything else works. Music access comes back with a computer: see the README.</string>
+
+    <!-- Control Center (Home's sliders button and the remote's Settings button) -->
+    <string name="control_center">Control Center</string>
+    <string name="screensaver_now">Screensaver</string>
+    <string name="screensaver_now_hint">Start now</string>
+    <string name="airplay">AirPlay</string>
+    <string name="airplay_hint">iPhone mirroring</string>
+    <string name="sleep_timer">Sleep timer</string>
+    <string name="sleep_timer_off">Off</string>
+    <string name="sleep_timer_left">%d min left</string>
+    <string name="sleep_now">Turn off now</string>
+    <string name="sleep_needs_helper">Needs the Home button helper (Settings, Accessibility)</string>
+    <string name="free_memory">Free memory</string>
+    <string name="memory_free">%d MB free</string>
+    <string name="memory_freed">Freed %1$d MB, %2$d MB free</string>
     <string name="setting_cpu">CPU line</string>
     <string name="option_shown">Shown</string>
     <string name="option_hidden">Hidden</string>
@@ -215,7 +269,7 @@
     <string name="running_stop_all">Stop all</string>
     <string name="try_again">Try again</string>
     <string name="animations_desc">Off moves focus instantly, lightest on slow TVs</string>
-    <string name="widgets_desc">Weather, air quality, lunar date and system stats</string>
+    <string name="widgets_desc">Weather, air quality, Hijri date and system stats</string>
     <string name="reboot">Boot options</string>
     <string name="reboot_desc">Needs network debugging on</string>
     <string name="reboot_action">Restart</string>
@@ -245,6 +299,10 @@
         <item>Pink</item>
         <item>Red</item>
     </string-array>
+    <string name="look_mode">Light or dark</string>
+    <string name="look_mode_auto">Dark from 6 PM to 6 AM</string>
+    <string name="look_mode_light">Always light</string>
+    <string name="look_mode_dark">Always dark</string>
     <string name="look_backdrop">Background</string>
     <string name="look_backdrop_shapes">Expressive shapes</string>
     <string name="look_backdrop_sky">Sky that follows the time of day</string>

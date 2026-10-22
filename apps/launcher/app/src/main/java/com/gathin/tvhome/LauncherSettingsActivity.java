@@ -58,6 +58,7 @@ public final class LauncherSettingsActivity extends Activity {
     private TextView widgetsChoice;
     private TextView tvSettingsChoice;
     private TextView colorChoice;
+    private TextView modeChoice;
     private TextView backdropChoice;
     private TextView screensaverTimeChoice;
     private TextView screensaverStyleChoice;
@@ -65,6 +66,9 @@ public final class LauncherSettingsActivity extends Activity {
     private boolean wallpaper;
     private static final int[] BACKDROP_NAMES = {
             R.string.look_backdrop_shapes, R.string.look_backdrop_sky, R.string.look_backdrop_plain};
+    /** In the order of HomeLook.MODES. */
+    private static final int[] MODE_NAMES = {
+            R.string.look_mode_auto, R.string.look_mode_light, R.string.look_mode_dark};
     private static final int[] SCREENSAVER_STYLE_NAMES = {R.string.screensaver_style_shapes,
             R.string.screensaver_style_glow, R.string.screensaver_style_minimal, R.string.screensaver_style_large};
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
@@ -246,10 +250,8 @@ public final class LauncherSettingsActivity extends Activity {
      */
     private void showUpdate() {
         updateChoice = findViewById(R.id.updateChoice);
-        updateChoice.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                icon(R.drawable.ic_system_update), null, null, null);
-        updateChoice.setOnClickListener(v -> onUpdateChosen());
-        checkForUpdate();
+        // This build is signed with its own key, so freeTV's GitHub releases cannot install over it: no check.
+        updateChoice.setVisibility(View.GONE);
     }
 
     private void checkForUpdate() {
@@ -491,6 +493,9 @@ public final class LauncherSettingsActivity extends Activity {
         colorChoice = findViewById(R.id.colorChoice);
         colorChoice.setCompoundDrawablesRelativeWithIntrinsicBounds(icon(R.drawable.ic_contrast), null, null, null);
         colorChoice.setOnClickListener(v -> chooseColor(config));
+        modeChoice = findViewById(R.id.modeChoice);
+        modeChoice.setCompoundDrawablesRelativeWithIntrinsicBounds(icon(R.drawable.ic_w_clear_night), null, null, null);
+        modeChoice.setOnClickListener(v -> chooseMode(config));
         backdropChoice = findViewById(R.id.backdropChoice);
         backdropChoice.setCompoundDrawablesRelativeWithIntrinsicBounds(icon(R.drawable.ic_picture), null, null, null);
         backdropChoice.setOnClickListener(v -> chooseBackdrop(config));
@@ -510,6 +515,19 @@ public final class LauncherSettingsActivity extends Activity {
         int backdrop = indexOf(HomeLook.BACKDROPS, HomeLook.backdrop(choices));
         backdropChoice.setText(item(getString(R.string.look_backdrop),
                 getString(wallpaper ? R.string.look_backdrop_wallpaper : BACKDROP_NAMES[backdrop])));
+        modeChoice.setText(item(getString(R.string.look_mode),
+                getString(MODE_NAMES[indexOf(HomeLook.MODES, HomeLook.mode(choices))])));
+    }
+
+    /** Light, dark, or dark at night: Home follows at once (MainActivity listens for the key). */
+    private void chooseMode(Config config) {
+        CharSequence[] labels = new CharSequence[MODE_NAMES.length];
+        for (int index = 0; index < labels.length; index++) labels[index] = getString(MODE_NAMES[index]);
+        int selected = indexOf(HomeLook.MODES, HomeLook.mode(choices));
+        chooseOne(R.string.look_mode, labels, null, selected, index -> {
+            choices.edit().putString(HomeLook.MODE_KEY, HomeLook.MODES[index]).apply();
+            showLookValues();
+        }, config);
     }
 
     /** The chosen seed's place in HomeLook.SEEDS, or -1 for the theme's colour. */
@@ -639,7 +657,8 @@ public final class LauncherSettingsActivity extends Activity {
         });
         turnOff.setOnClickListener(v -> {
             dialog.dismiss();
-            runPowerCommand(TURN_OFF_COMMAND);
+            // The Home button helper needs no network adb, which is closed after setup.
+            if (!HomeKeyService.lockScreen()) runPowerCommand(TURN_OFF_COMMAND);
         });
         cancel.requestFocus();
     }

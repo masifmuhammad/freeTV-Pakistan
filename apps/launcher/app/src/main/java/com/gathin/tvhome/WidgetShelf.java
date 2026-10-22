@@ -22,7 +22,9 @@ import com.google.android.material.color.utilities.Blend;
 import com.google.android.material.color.utilities.Hct;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,14 +40,15 @@ import java.util.function.IntConsumer;
  *       end only its own background processes, so a launcher cannot free other apps' memory itself.)</li>
  *   <li>Air quality: the US AQI and PM2.5 at the weather's place ({@link AirQuality}), its band in the
  *       band's colour harmonised with the scheme; OK switches between now and tomorrow's worst hour.</li>
- *   <li>Lunar calendar: today's lunar date, the year's can chi and the next holiday; OK steps through the
- *       holidays after it.</li>
+ *   <li>Hijri calendar ({@link Hijri}): today's Hijri date as Pakistan keeps it and the next holiday; OK
+ *       steps through the holidays after it.</li>
  * </ul>
  * The owner picks which widgets show and in what order: an empty column holds an Add widget card (OK
  * lists the widgets not shown), and holding OK on a widget offers Move left, Move right and Remove.
  * The list is kept in the launcher's settings ({@link #ORDER_KEY}), and so is each widget's own
  * settings (Settings on its menu): the place and unit of the weather (the air quality shares the
- * place), whether the calendar counts down to every holiday or only Tết, and whether This TV shows CPU.
+ * place), whether the calendar counts down to every holiday or only the Eids, how far its date is
+ * from Umm al-Qura's, and whether This TV shows CPU.
  * It scrolls away with the grid when focus goes below the dock. Nothing runs while Home is hidden, and
  * nothing on it animates except focus: the box this runs on is slow.
  */
@@ -55,9 +58,13 @@ final class WidgetShelf {
     static final String PREF_KEY = "widgets";
     /** The widgets on the shelf, left to right, comma separated. */
     static final String ORDER_KEY = "widget_order";
-    static final String WEATHER = "weather", SYSTEM = "system", AIR = "air", CALENDAR = "calendar";
-    private static final String[] ALL = {WEATHER, SYSTEM, AIR, CALENDAR};
-    private static final int MAX_CARDS = 4;
+    static final String WEATHER = "weather", SYSTEM = "system", AIR = "air", CALENDAR = "calendar",
+            PRAYER = "prayer";
+    private static final String[] ALL = {WEATHER, SYSTEM, AIR, CALENDAR, PRAYER};
+    /** One card per dock column: five over this TV's five-app dock. */
+    private static final int MAX_CARDS = 5;
+    /** Set once the prayer card was added to an order saved before it existed, so removing it sticks. */
+    private static final String PRAYER_ADDED_KEY = "widget_prayer_added";
 
     /** What the shelf needs from Home: its menus, the storage page, and a say when the cards change. */
     interface Host {
@@ -126,6 +133,9 @@ final class WidgetShelf {
     private final TextView airLabel, airValue, airDetail;
     private final ShapeBadge airBadge;
     private final TextView lunarLabel, lunarDate, holiday;
+    private final TextView prayerLabel, prayerTime, prayerDetail;
+    /** Which of the coming prayers the card shows, stepped by OK: 0 is the next one. */
+    private int prayerStep;
     private final TextView ramName, storageName, cpuName, cpuValue;
     private final M3Progress cpuBar;
     private final ImageView cpuIcon;
@@ -150,17 +160,21 @@ final class WidgetShelf {
     private final String configCity;
     private final SharedPreferences prefs;
     private static final String CITY_KEY = "weather_city", UNIT_KEY = "weather_unit",
-            TET_ONLY_KEY = "calendar_tet_only", CPU_KEY = "system_cpu";
+            EID_ONLY_KEY = "calendar_eid_only", CPU_KEY = "system_cpu";
+    /** The Hijri date's offsets from Umm al-Qura offered, in days, and how the menu names them. */
+    private static final int[] HIJRI_OFFSETS = {-2, -1, 0, 1};
+    private static final int[] HIJRI_OFFSET_NAMES = {R.string.hijri_offset_minus_2,
+            R.string.hijri_offset_minus_1, R.string.hijri_offset_zero, R.string.hijri_offset_plus_1};
     /** The page each card opens on when Home shows, from its settings. */
     private static final String WEATHER_PAGE_KEY = "weather_page", AIR_PAGE_KEY = "air_page",
             SYSTEM_PAGE_KEY = "system_page";
     private static final int[] WEATHER_PAGE_NAMES = {R.string.page_now, R.string.page_details, R.string.page_tomorrow};
     private static final int[] AIR_PAGE_NAMES = {R.string.page_today, R.string.page_tomorrow};
     /** The places offered, as geocoder queries ("name|country"); "" is wherever the IP says. */
-    private static final String[] CITY_QUERIES = {"", "Hanoi|VN", "Ho Chi Minh City|VN", "Da Nang|VN", "Haiphong|VN",
-            "Can Tho|VN", "Hue|VN", "Nha Trang|VN", "Da Lat|VN"};
-    private static final String[] CITY_NAMES = {null, "Hà Nội", "TP. Hồ Chí Minh", "Đà Nẵng", "Hải Phòng",
-            "Cần Thơ", "Huế", "Nha Trang", "Đà Lạt"};
+    private static final String[] CITY_QUERIES = {"", "Lahore|PK", "Karachi|PK", "Islamabad|PK",
+            "Rawalpindi|PK", "Faisalabad|PK", "Multan|PK", "Peshawar|PK", "Quetta|PK"};
+    private static final String[] CITY_NAMES = {null, "Lahore", "Karachi", "Islamabad", "Rawalpindi",
+            "Faisalabad", "Multan", "Peshawar", "Quetta"};
     private final Host host;
     private Palette palette = Palette.currentOrBaseline();
     private boolean enabled, started;
@@ -196,7 +210,8 @@ final class WidgetShelf {
         prefs = activity.getSharedPreferences(Config.SETTINGS_NAME, Context.MODE_PRIVATE);
         cpu = new CpuMeter(activity);
         cards = new WidgetCard[]{shelf.findViewById(R.id.widgetWeather), shelf.findViewById(R.id.widgetSystem),
-                shelf.findViewById(R.id.widgetAir), shelf.findViewById(R.id.widgetCalendar)};
+                shelf.findViewById(R.id.widgetAir), shelf.findViewById(R.id.widgetCalendar),
+                shelf.findViewById(R.id.widgetPrayer)};
         weatherPlace = shelf.findViewById(R.id.weatherPlace);
         weatherTemp = shelf.findViewById(R.id.weatherTemp);
         weatherDetail = shelf.findViewById(R.id.weatherDetail);
@@ -215,6 +230,9 @@ final class WidgetShelf {
         lunarLabel = shelf.findViewById(R.id.lunarLabel);
         lunarDate = shelf.findViewById(R.id.lunarDate);
         holiday = shelf.findViewById(R.id.holiday);
+        prayerLabel = shelf.findViewById(R.id.prayerLabel);
+        prayerTime = shelf.findViewById(R.id.prayerTime);
+        prayerDetail = shelf.findViewById(R.id.prayerDetail);
         cpuName = shelf.findViewById(R.id.cpuName);
         cpuValue = shelf.findViewById(R.id.cpuValue);
         cpuBar = shelf.findViewById(R.id.cpuBar);
@@ -226,7 +244,8 @@ final class WidgetShelf {
         rowNames = new TextView[]{cpuName, ramName, storageName};
         rowValues = new TextView[]{cpuValue, ramValue, storageValue};
         rowBars = new M3Progress[]{cpuBar, ramBar, storageBar};
-        for (TextView line : new TextView[]{weatherPlace, weatherDetail, airLabel, airDetail, lunarLabel, holiday}) {
+        for (TextView line : new TextView[]{weatherPlace, weatherDetail, airLabel, airDetail, lunarLabel, holiday,
+                prayerLabel, prayerDetail}) {
             TextFit.attach(line);
         }
         for (int i = 0; i < rowNames.length; i++) {
@@ -278,6 +297,10 @@ final class WidgetShelf {
             holidayStep++;
             cards[3].turn(this::paintCalendar);
         });
+        cards[4].setOnClickListener(v -> {
+            prayerStep++;
+            cards[4].turn(this::paintPrayer);
+        });
     }
 
     /** Down from the card over dock column i: the activity focuses the app below it. */
@@ -310,7 +333,7 @@ final class WidgetShelf {
     }
 
     private WidgetCard[] allCards() {
-        return new WidgetCard[]{cards[0], cards[1], cards[2], cards[3], addCard};
+        return new WidgetCard[]{cards[0], cards[1], cards[2], cards[3], cards[4], addCard};
     }
 
     private WidgetCard card(String id) {
@@ -332,6 +355,10 @@ final class WidgetShelf {
             id = id.trim();
             if (id.equals("now_playing")) id = AIR;   // the widget air quality replaced, in its place
             if (card(id) != null && !order.contains(id)) order.add(id);
+        }
+        if (!prefs.getBoolean(PRAYER_ADDED_KEY, false)) {
+            if (!order.contains(PRAYER)) order.add(PRAYER);
+            prefs.edit().putBoolean(PRAYER_ADDED_KEY, true).apply();
         }
     }
 
@@ -522,8 +549,12 @@ final class WidgetShelf {
         return "f".equals(prefs.getString(UNIT_KEY, "c"));
     }
 
-    private boolean tetOnly() {
-        return prefs.getBoolean(TET_ONLY_KEY, false);
+    private boolean eidOnly() {
+        return prefs.getBoolean(EID_ONLY_KEY, false);
+    }
+
+    private int hijriOffset() {
+        return Hijri.offset(activity);
     }
 
     private boolean showCpu() {
@@ -569,13 +600,45 @@ final class WidgetShelf {
                 break;
             case CALENDAR:
                 String[] countdown = {activity.getString(R.string.countdown_next),
-                        activity.getString(R.string.countdown_tet)};
-                items.add(setting(R.drawable.ic_timer, R.string.setting_countdown, countdown[tetOnly() ? 1 : 0],
-                        () -> showChoices(anchor, countdown, tetOnly() ? 1 : 0, i -> {
-                            prefs.edit().putBoolean(TET_ONLY_KEY, i == 1).apply();
+                        activity.getString(R.string.countdown_eid)};
+                items.add(setting(R.drawable.ic_timer, R.string.setting_countdown, countdown[eidOnly() ? 1 : 0],
+                        () -> showChoices(anchor, countdown, eidOnly() ? 1 : 0, i -> {
+                            prefs.edit().putBoolean(EID_ONLY_KEY, i == 1).apply();
                             holidayStep = 0;
                             paintCalendar();
                         })));
+                String[] offsets = new String[HIJRI_OFFSETS.length];
+                int currentOffset = 0;
+                for (int i = 0; i < offsets.length; i++) {
+                    offsets[i] = activity.getString(HIJRI_OFFSET_NAMES[i]);
+                    if (HIJRI_OFFSETS[i] == hijriOffset()) currentOffset = i;
+                }
+                int selectedOffset = currentOffset;
+                items.add(setting(R.drawable.ic_calendar, R.string.setting_hijri_date, offsets[selectedOffset],
+                        () -> showChoices(anchor, offsets, selectedOffset, i -> {
+                            prefs.edit().putInt(Hijri.OFFSET_KEY, HIJRI_OFFSETS[i]).apply();
+                            paintCalendar();
+                        })));
+                break;
+            case PRAYER:
+                String[] asr = {activity.getString(R.string.asr_hanafi), activity.getString(R.string.asr_standard)};
+                int asrChoice = PrayerTimes.hanafiAsr(activity) ? 0 : 1;
+                items.add(setting(R.drawable.ic_timer, R.string.setting_asr, asr[asrChoice],
+                        () -> showChoices(anchor, asr, asrChoice, i -> {
+                            prefs.edit().putBoolean(PrayerTimes.HANAFI_KEY, i == 0).apply();
+                            paintPrayer();
+                            PrayerReminder.schedule(activity);
+                        })));
+                String[] reminders = {activity.getString(R.string.reminders_at_time),
+                        activity.getString(R.string.reminders_early), activity.getString(R.string.reminders_off)};
+                int reminderChoice = Arrays.asList(PrayerReminder.MODES).indexOf(PrayerReminder.mode(activity));
+                items.add(setting(R.drawable.ic_w_clear_night, R.string.setting_reminders, reminders[reminderChoice],
+                        () -> showChoices(anchor, reminders, reminderChoice, i -> {
+                            prefs.edit().putString(PrayerReminder.MODE_KEY, PrayerReminder.MODES[i]).apply();
+                            PrayerReminder.schedule(activity);
+                        })));
+                items.add(new MenuItem(R.drawable.ic_open_in_new, activity.getString(R.string.reminder_preview),
+                        () -> PrayerReminder.preview(activity)));
                 break;
             default:
                 items.add(opensOn(anchor, SYSTEM_PAGE_KEY, SystemPages.NAMES, i -> {
@@ -702,6 +765,7 @@ final class WidgetShelf {
             case WEATHER: return R.string.weather;
             case SYSTEM: return R.string.widget_system;
             case AIR: return R.string.air_quality;
+            case PRAYER: return R.string.prayer_times;
             default: return R.string.lunar_calendar;
         }
     }
@@ -711,6 +775,7 @@ final class WidgetShelf {
             case WEATHER: return R.drawable.ic_w_partly_day;
             case SYSTEM: return R.drawable.ic_memory;
             case AIR: return R.drawable.ic_air;
+            case PRAYER: return R.drawable.ic_w_clear_night;
             default: return R.drawable.ic_calendar;
         }
     }
@@ -723,7 +788,9 @@ final class WidgetShelf {
         weatherPage = prefs.getInt(WEATHER_PAGE_KEY, 0) % WEATHER_PAGES;
         airTomorrow = prefs.getInt(AIR_PAGE_KEY, 0) == 1;
         systemPage = prefs.getInt(SYSTEM_PAGE_KEY, 0) % SystemPages.COUNT;
+        prayerStep = 0;
         if (has(CALENDAR)) paintCalendar();
+        if (has(PRAYER)) paintPrayer();
         if (has(SYSTEM)) {
             // The baseline: the first figure comes with the first tick, unless the TV hides every source.
             if (cpu.sample() == CpuMeter.UNAVAILABLE) lastCpu = CpuMeter.UNAVAILABLE;
@@ -745,6 +812,7 @@ final class WidgetShelf {
     void tick() {
         if (!started) return;
         if (has(CALENDAR)) paintCalendar();
+        if (has(PRAYER)) paintPrayer();
         if (has(SYSTEM)) paintSystem();
         if (has(WEATHER)) refreshWeather(false);
         if (has(AIR)) refreshAir(false);
@@ -800,6 +868,12 @@ final class WidgetShelf {
         }
     }
 
+    /** Where the shelf ends in its frame (the header's edge when the shelf is off), for the now playing bar. */
+    int bottom() {
+        ViewGroup.MarginLayoutParams layout = (ViewGroup.MarginLayoutParams) shelf.getLayoutParams();
+        return enabled ? layout.topMargin + layout.height : headerUnderlap;
+    }
+
     void onGridScrolled(RecyclerView grid) {
         if (!enabled) return;
 
@@ -822,9 +896,14 @@ final class WidgetShelf {
         highlight.setColor(editing ? p.tertiary : p.primary);
         addLabel.setTextColor(p.onSurfaceVariant);
         addIcon.setImageTintList(ColorStateList.valueOf(p.onSurfaceVariant));
-        for (TextView t : new TextView[]{weatherPlace, airLabel, lunarLabel}) t.setTextColor(p.onSurfaceVariant);
-        for (TextView t : new TextView[]{weatherTemp, lunarDate, airValue, cpuName, ramName, storageName}) t.setTextColor(p.onSurface);
-        for (TextView t : new TextView[]{weatherDetail, airDetail, holiday, cpuValue, ramValue, storageValue}) t.setTextColor(p.onSurfaceVariant);
+        for (TextView t : new TextView[]{weatherPlace, airLabel, lunarLabel, prayerLabel}) t.setTextColor(p.onSurfaceVariant);
+        for (TextView t : new TextView[]{weatherTemp, lunarDate, prayerTime, airValue, cpuName, ramName, storageName}) {
+            t.setTextColor(p.onSurface);
+        }
+        for (TextView t : new TextView[]{weatherDetail, airDetail, holiday, prayerDetail, cpuValue, ramValue,
+                storageValue}) {
+            t.setTextColor(p.onSurfaceVariant);
+        }
         cpuIcon.setImageTintList(ColorStateList.valueOf(p.primary));
         cpuBar.setPalette(p);
         ramIcon.setImageTintList(ColorStateList.valueOf(p.primary));
@@ -970,44 +1049,61 @@ final class WidgetShelf {
         airValue.setText(String.valueOf(aqi));
         airDetail.setText(tomorrow ? activity.getString(R.string.air_detail_tomorrow, band)
                 : activity.getString(R.string.air_detail, band, air.pm25));
-        Hct hct = Hct.fromInt(Blend.harmonize(AirQuality.color(level), palette.primary));
+        int[] colors = airColors(aqi, palette);
+        airBadge.setColors(colors[0], colors[1]);
+    }
+
+    /**
+     * The band's own colour, not harmonised, at a tone that stays clear on black: the screensaver is read from
+     * across the room, where red has to look like a warning.
+     */
+    static int[] airAlertColors(int aqi) {
+        Hct band = Hct.fromInt(AirQuality.color(AirQuality.level(aqi)));
+        return new int[]{Hct.from(band.getHue(), Math.max(band.getChroma(), 60), 58).toInt(), 0xFFFFFFFF};
+    }
+
+    /** The air badge's fill and icon: the band's colour harmonised towards the scheme, at the scheme's tone. */
+    static int[] airColors(int aqi, Palette palette) {
+        Hct hct = Hct.fromInt(Blend.harmonize(AirQuality.color(AirQuality.level(aqi)), palette.primary));
         boolean dark = palette.dark;
         int fill = Hct.from(hct.getHue(), Math.max(hct.getChroma(), 36), dark ? 80 : 40).toInt();
         int on = Hct.from(hct.getHue(), Math.min(hct.getChroma(), 16), dark ? 20 : 100).toInt();
-        airBadge.setColors(fill, on);
+        return new int[]{fill, on};
     }
 
-    // ---- lunar calendar --------------------------------------------------------------------------
+    // ---- prayer times ----------------------------------------------------------------------------
+
+    /** The next prayer and how long until it; OK steps through the ones after it, into tomorrow. */
+    private void paintPrayer() {
+        LocalDateTime now = LocalDateTime.now();
+        List<PrayerTimes.Time> next = PrayerTimes.upcoming(activity, now);
+        int count = Math.min(next.size(), PrayerTimes.Prayer.values().length);
+        if (count == 0) return;
+        PrayerTimes.Time shown = next.get(Math.floorMod(prayerStep, count));
+        prayerLabel.setText(shown.prayer.title);
+        // AM or PM small after the time, as the header clock has it, so "12:04 PM" still fits the card.
+        prayerTime.setText(PrayerTimes.clockText(activity, shown.at, 0.4f));
+        prayerDetail.setText(activity.getString(R.string.prayer_in, PrayerTimes.until(now, shown.at)));
+    }
+
+    // ---- Hijri calendar --------------------------------------------------------------------------
 
     private void paintCalendar() {
         LocalDate today = LocalDate.now();
-        LunarCalendar.Date l = LunarCalendar.toLunar(today);
-        lunarLabel.setText(activity.getString(R.string.lunar_year, LunarCalendar.canChi(l.year)));
-        String date = l.day + "/" + l.month;
-        lunarDate.setText(l.leap ? activity.getString(R.string.lunar_leap, date) : date);
-        List<LunarCalendar.Upcoming> upcoming = LunarCalendar.upcoming(today);
-        if (tetOnly()) upcoming.removeIf(u -> u.holiday != LunarCalendar.Holiday.TET);
+        int offset = hijriOffset();
+        Hijri.Date h = Hijri.toHijri(today, offset);
+        lunarLabel.setText(activity.getString(R.string.hijri_month_year, h.monthName(), h.year));
+        lunarDate.setText(String.valueOf(h.day));
+        List<Hijri.Upcoming> upcoming = Hijri.upcoming(today, offset);
+        if (eidOnly()) upcoming.removeIf(u -> !u.holiday.eid());
         if (upcoming.isEmpty()) {
             holiday.setText("");
             return;
         }
-        LunarCalendar.Upcoming u = upcoming.get(Math.floorMod(holidayStep, upcoming.size()));
-        String name = activity.getString(holidayName(u.holiday));
+        Hijri.Upcoming u = upcoming.get(Math.floorMod(holidayStep, upcoming.size()));
+        String name = u.holiday.title;
         holiday.setText(u.days == 0 ? activity.getString(R.string.holiday_today, name)
                 : u.days == 1 ? activity.getString(R.string.holiday_tomorrow, name)
                 : activity.getString(R.string.holiday_in_days, name, (int) u.days));
-    }
-
-    private static int holidayName(LunarCalendar.Holiday h) {
-        switch (h) {
-            case NEW_YEAR: return R.string.holiday_new_year;
-            case TET: return R.string.holiday_tet;
-            case HUNG_KINGS: return R.string.holiday_hung_kings;
-            case REUNIFICATION: return R.string.holiday_reunification;
-            case LABOUR: return R.string.holiday_labour;
-            case MID_AUTUMN: return R.string.holiday_mid_autumn;
-            case NATIONAL_DAY: return R.string.holiday_national_day;
-            default: return R.string.holiday_christmas;
-        }
     }
 }
