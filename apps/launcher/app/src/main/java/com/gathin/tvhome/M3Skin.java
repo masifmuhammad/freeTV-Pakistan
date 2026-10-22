@@ -109,6 +109,8 @@ final class M3Skin {
         GradientDrawable d = new GradientDrawable();
         d.setColor(p.surfaceContainerHigh);
         d.setCornerRadius((menu ? MENU_RADIUS_DP : DIALOG_RADIUS_DP) * density);
+        // Liquid Glass keeps panels opaque (nothing blurs what is behind them) and gives them the glass rim.
+        if (p.glass) d.setStroke(Math.max(1, Math.round(density)), GlassDrawable.edge(p));
         if (menu && v instanceof ViewGroup) {
             MenuHighlight.attach((ViewGroup) v, d, p.inverseSurface, MENU_ROW_DP / 2f * density, animations, reducedMotion);
         } else {

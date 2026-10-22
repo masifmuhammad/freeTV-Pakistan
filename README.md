@@ -5,6 +5,7 @@ A fork of <a href="https://github.com/kienmai160598/freeTV">kienmai160598/freeTV
 <a href="https://github.com/Gathin23/cleanyourtv">Gathin23/cleanyourtv</a>, set up for Lahore and the rest of Pakistan.</p>
 
 <p align="center">
+  <a href="#let-claude-code-set-it-up">Let Claude Code do it</a>&nbsp;&nbsp;&nbsp;&nbsp;
   <a href="#install">Install</a>&nbsp;&nbsp;&nbsp;&nbsp;
   <a href="../../releases/latest">Download</a>&nbsp;&nbsp;&nbsp;&nbsp;
   <a href="#after-a-firmware-update-no-computer-needed">After an update</a>&nbsp;&nbsp;&nbsp;&nbsp;
@@ -17,6 +18,15 @@ A fork of <a href="https://github.com/kienmai160598/freeTV">kienmai160598/freeTV
 
 ## What it adds for Pakistan
 
+- **Liquid Glass**: an Apple-style look for Home (Launcher settings > Appearance > Background > Liquid Glass).
+  See-through glass cards, dock and buttons with a bright edge, over a soft colour field drawn from your colour.
+  Built for cheap TVs: no live blur, the background is painted once, so it stays as smooth as the plain look.
+
+  <img src="docs/media/pk-liquid-glass.png" alt="Home in Liquid Glass: glass widget cards and dock over a soft blue and violet background" width="880">
+  <img src="docs/media/pk-liquid-glass-setting.png" alt="Launcher settings: Background choices, with Liquid Glass last" width="440">
+
+- **Volume that steps by one**: on TCL Google TV every press of the remote's volume key moved two steps
+  while the remote-button helper was on. It now moves one; holding the key still repeats.
 - **Weather and air quality** for Lahore by default, with Karachi, Islamabad, Rawalpindi, Faisalabad, Multan,
   Peshawar and Quetta a click away (hold OK on the weather card > Settings > Location). Air quality is the
   US AQI, with its band colour, so a smoggy day shows red.
@@ -46,6 +56,25 @@ A fork of <a href="https://github.com/kienmai160598/freeTV">kienmai160598/freeTV
 
 The rest is freeTV's: Material 3 Expressive home, widgets, Edit Home, the debloat lists for 108 TVs and the
 `tvctl` tool. This build does not update itself from freeTV's releases: it is signed with its own key.
+
+## Let Claude Code set it up
+
+Give a friend this repo and they need not read anything else. On their computer:
+
+1. Install [Claude Code](https://claude.com/claude-code) and [Git](https://git-scm.com).
+2. On the TV: Settings > System (or Device Preferences) > About, press **Build** seven times, then in Developer
+   options switch on **USB debugging** and **Network debugging**. The TV and the computer must be on the same
+   Wi-Fi. Note the TV's IP address (Settings > Network).
+3. Open Claude Code in an empty folder and paste:
+
+   ```text
+   Clone https://github.com/masifmuhammad/freeTV-Pakistan and follow docs/prompt.md in it to set up my
+   Android TV. Its IP address is <tv ip>. My city is <city> and the name for the greeting is <name>.
+   ```
+
+Claude Code installs what is missing (adb, JDK 17, the Android SDK), backs the TV up, asks before it switches
+anything off, builds and installs the launcher, and checks every step on the TV. Keep the remote at hand: the TV
+asks once to allow the computer, and the last check is pressing the remote's buttons.
 
 ## Install
 

@@ -127,8 +127,8 @@ final class NowPlayingBar {
         glass.setCornerRadius(32 * density);
         glass.setColor(p.surfaceContainerHigh);
         glass.setStroke(Math.max(1, Math.round(density / 2)), p.outlineVariant);
-        bar.setBackground(glass);
-        bar.setElevation(6 * density);
+        bar.setBackground(p.glass ? new GlassDrawable(p, 32 * density, density) : glass);
+        bar.setElevation(p.glass ? 0 : 6 * density);
         title.setTextColor(p.onSurface);
         subtitle.setTextColor(p.onSurfaceVariant);
         paintFocus();

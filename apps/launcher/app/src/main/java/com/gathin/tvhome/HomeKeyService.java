@@ -140,8 +140,20 @@ public class HomeKeyService extends AccessibilityService {
         return false;
     }
 
+    /**
+     * Android TV turns the volume as a volume key comes in, before key filtering; a key this service
+     * hands back is injected again and turns it a second time (TCL G03: one press, two steps). Keeping
+     * the volume keys leaves the first turn and the system's own repeat while the key is held.
+     */
+    private static boolean isVolumeKey(KeyEvent event) {
+        int code = event.getKeyCode();
+        return code == KeyEvent.KEYCODE_VOLUME_UP || code == KeyEvent.KEYCODE_VOLUME_DOWN
+                || code == KeyEvent.KEYCODE_VOLUME_MUTE;
+    }
+
     @Override
     protected boolean onKeyEvent(KeyEvent event) {
+        if (isVolumeKey(event)) return true;
         if (!configLoaded) return false;
         // The stock launcher handled the remote's Settings button; with it disabled the button does nothing.
         if (isSettingsKey(event)) {

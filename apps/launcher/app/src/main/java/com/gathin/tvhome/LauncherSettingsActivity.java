@@ -65,7 +65,8 @@ public final class LauncherSettingsActivity extends Activity {
     /** A theme's wallpaper is showing: it sets the scheme and covers the backdrop, so both rows rest. */
     private boolean wallpaper;
     private static final int[] BACKDROP_NAMES = {
-            R.string.look_backdrop_shapes, R.string.look_backdrop_sky, R.string.look_backdrop_plain};
+            R.string.look_backdrop_shapes, R.string.look_backdrop_sky, R.string.look_backdrop_plain,
+            R.string.look_backdrop_glass};
     /** In the order of HomeLook.MODES. */
     private static final int[] MODE_NAMES = {
             R.string.look_mode_auto, R.string.look_mode_light, R.string.look_mode_dark};

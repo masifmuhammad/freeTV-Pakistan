@@ -31,8 +31,11 @@ final class Palette {
     final int seed;
     /** Dark or light Tonal Spot scheme for the seed. */
     final boolean dark;
+    /** Liquid Glass: Home's cards, dock and buttons are see-through glass over {@link GlassBackdrop}. */
+    final boolean glass;
     /** The appearance new schemes are built in: the system's (dark unless the system says light). */
     private static boolean darkMode = true;
+    private static boolean glassMode;
     final int primary, onPrimary, primaryContainer, onPrimaryContainer;
     final int secondary, secondaryContainer, onSecondaryContainer;
     final int tertiary, tertiaryContainer;
@@ -49,6 +52,7 @@ final class Palette {
     private Palette(int seed, boolean dark) {
         this.seed = seed;
         this.dark = dark;
+        glass = glassMode;
         DynamicScheme s = new SchemeTonalSpot(Hct.fromInt(seed), dark, 0.0);
         MaterialDynamicColors c = new MaterialDynamicColors();
         primary = c.primary().getArgb(s);
@@ -115,19 +119,26 @@ final class Palette {
 
     /** Switches the appearance and republishes the current seed in it, so every painted view follows. */
     static void setDarkMode(boolean dark) {
+        setLook(dark, glassMode);
+    }
+
+    private static void setLook(boolean dark, boolean glass) {
         darkMode = dark;
-        if (current != null && current.dark != dark) publish(new Palette(current.seed, dark));
+        glassMode = glass;
+        if (current != null && (current.dark != dark || current.glass != glass)) {
+            publish(new Palette(current.seed, dark));
+        }
     }
 
     /**
-     * Follows Launcher settings' Light or dark (HomeLook): call before the first scheme is built, when the
-     * configuration changes, and once a minute on Home. The system's night mode is not read: TCL's G03
-     * firmware reports "no" all the time, which would keep Home light.
+     * Follows Launcher settings' Light or dark and Liquid Glass (HomeLook): call before the first scheme is
+     * built, when the configuration changes, and once a minute on Home. The system's night mode is not read:
+     * TCL's G03 firmware reports "no" all the time, which would keep Home light.
      */
     static void loadDarkMode(android.content.Context context) {
         android.content.SharedPreferences choices =
                 context.getSharedPreferences(Config.SETTINGS_NAME, android.content.Context.MODE_PRIVATE);
-        setDarkMode(HomeLook.dark(choices, java.time.LocalTime.now().getHour()));
+        setLook(HomeLook.dark(choices, java.time.LocalTime.now().getHour()), HomeLook.glass(choices));
     }
 
     /** The same seed in the dark scheme, for surfaces that must stay dark (the screensaver). */
@@ -138,7 +149,8 @@ final class Palette {
     /** On the main thread: make this the scheme on screen and tell the painted views. */
     static void publish(Palette palette) {
         if (Looper.myLooper() != Looper.getMainLooper()) throw new IllegalStateException("main thread only");
-        if (palette == null || (current != null && current.seed == palette.seed && current.dark == palette.dark)) return;
+        if (palette == null || (current != null && current.seed == palette.seed && current.dark == palette.dark
+                && current.glass == palette.glass)) return;
         current = palette;
         for (Runnable listener : new ArrayList<>(listeners)) listener.run();
     }

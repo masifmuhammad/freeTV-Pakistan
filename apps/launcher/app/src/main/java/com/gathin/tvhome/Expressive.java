@@ -159,11 +159,15 @@ final class Expressive {
             activeBg = p.onSurface;
             activeFg = p.inverseOnSurface;
         } else {
-            restBg = Palette.alpha(p.surfaceVariant, 0xCC);
+            restBg = p.glass ? GlassDrawable.tint(p) : Palette.alpha(p.surfaceVariant, 0xCC);
             restFg = Palette.alpha(p.onSurface, 0xCC);
             activeBg = p.onSurface;
             activeFg = p.inverseOnSurface;
         }
+        boolean glassButton = p.glass && !listItem && !choice;
+        float density = view.getResources().getDisplayMetrics().density;
+        background.setStroke(glassButton ? Math.max(1, Math.round(density)) : 0,
+                glassButton ? GlassDrawable.edge(p) : 0);
         selectedBg = choice ? p.secondaryContainer : Palette.alpha(p.secondaryContainer, 0x66);
         selectedFg = p.onSecondaryContainer;
         applyColors();

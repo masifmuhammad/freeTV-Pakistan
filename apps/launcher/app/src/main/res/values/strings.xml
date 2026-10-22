@@ -307,6 +307,7 @@
     <string name="look_backdrop_shapes">Expressive shapes</string>
     <string name="look_backdrop_sky">Sky that follows the time of day</string>
     <string name="look_backdrop_plain">Plain</string>
+    <string name="look_backdrop_glass">Liquid Glass</string>
     <string name="look_backdrop_wallpaper">The theme\'s wallpaper</string>
     <string name="settings_group_screensaver">Screensaver</string>
     <string name="screensaver_after">Start after</string>

@@ -108,6 +108,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             // Launcher settings sits over Home: the new scheme shows behind its sheet at once.
             Palette.publish(Palette.fromBackground(Config.load(this).backgroundColor));
         } else if (HomeLook.BACKDROP_KEY.equals(key)) {
+            Palette.loadDarkMode(this);   // Liquid Glass repaints every surface, not only the backdrop
             applyBackdrop(HomeLook.backdrop(preferences));
         } else if (HomeLook.MODE_KEY.equals(key)) {
             followAppearance();
@@ -230,6 +231,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     /** The scheme Home is painted in, to catch up on resume if a change was missed while hidden. */
     private Palette shownPalette;
     private ExpressiveBackdrop backdrop;
+    private GlassBackdrop glassBackdrop;
     /** Edit Home's floating toolbar and its two lines. */
     private View editBar;
     private TextView editBarTitle, editBarHint;
@@ -1346,6 +1348,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         if (!wallpaperShown()) root.setBackgroundColor(p.surface);
         paintHeaderScrim(p);
         if (backdrop != null) backdrop.setPalette(p);
+        if (glassBackdrop != null) glassBackdrop.setPalette(p);
         if (widgets != null) widgets.setPalette(p);
         if (nowBar != null) nowBar.setPalette(p);
         if (editBar != null) {
@@ -1374,8 +1377,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             grid.invalidateItemDecorations();
         }
         if (!festive) {
-            glass.setRingColor(p.primary);
-            if (focusIndicator != null) focusIndicator.setColor(reordering ? p.tertiary : p.primary);
+            // Liquid Glass focus is light catching the edge: the ring in the text colour, not an accent.
+            int ring = p.glass ? p.onSurface : p.primary;
+            glass.setRingColor(ring);
+            if (focusIndicator != null) focusIndicator.setColor(reordering ? p.tertiary : ring);
         }
         grid.invalidate();
         adapter.setPalette(p);
@@ -1567,6 +1572,16 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             backdrop.stop();
             root.removeView(backdrop);
             backdrop = null;
+        }
+        boolean glassy = HomeLook.GLASS.equals(style) && !wallpaperPlayer.showing();
+        if (glassy && glassBackdrop == null) {
+            glassBackdrop = new GlassBackdrop(this);
+            root.addView(glassBackdrop, 0, new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            if (shownPalette != null) glassBackdrop.setPalette(shownPalette);
+        } else if (!glassy && glassBackdrop != null) {
+            root.removeView(glassBackdrop);
+            glassBackdrop = null;
         }
         sky.setIntensity(HomeLook.skyIntensity(style, homeConfig.skyIntensity, Palette.darkMode()));
     }

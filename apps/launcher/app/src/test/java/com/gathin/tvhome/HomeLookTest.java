@@ -1,5 +1,6 @@
 package com.gathin.tvhome;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -19,5 +20,13 @@ public class HomeLookTest {
     public void lightAndDarkIgnoreTheHour() {
         assertFalse(HomeLook.dark(HomeLook.LIGHT, 23));
         assertTrue(HomeLook.dark(HomeLook.DARK, 12));
+    }
+
+    @Test
+    public void onlyTheShapesAndTheSkyShowTheSky() {
+        assertEquals(40, HomeLook.skyIntensity(HomeLook.SHAPES, 40, true));
+        assertEquals(40, HomeLook.skyIntensity(HomeLook.SKY, 40, true));
+        assertEquals(0, HomeLook.skyIntensity(HomeLook.PLAIN, 40, true));
+        assertEquals(0, HomeLook.skyIntensity(HomeLook.GLASS, 40, true));
     }
 }

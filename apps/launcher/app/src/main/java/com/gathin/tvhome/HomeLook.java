@@ -10,9 +10,12 @@ final class HomeLook {
     private HomeLook() { }
 
     static final String BACKDROP_KEY = "backdrop";
-    /** The M3 Expressive shapes, the time-of-day sky, or the scheme's surface alone. */
-    static final String SHAPES = "shapes", SKY = "sky", PLAIN = "plain";
-    static final String[] BACKDROPS = {SHAPES, SKY, PLAIN};
+    /**
+     * The M3 Expressive shapes, the time-of-day sky, the scheme's surface alone, or Liquid Glass: a soft
+     * colour field under see-through cards ({@link GlassBackdrop}, {@link GlassDrawable}).
+     */
+    static final String SHAPES = "shapes", SKY = "sky", PLAIN = "plain", GLASS = "glass";
+    static final String[] BACKDROPS = {SHAPES, SKY, PLAIN, GLASS};
     /**
      * The sky's opacity when it is chosen here and the theme gives it none. Its gradient is a dark one, so a
      * light scheme gets a tint of it that keeps the dark header text readable.
@@ -53,12 +56,16 @@ final class HomeLook {
         return SHAPES;
     }
 
-    /** sky_intensity for a backdrop: the theme's for the shapes, a visible sky for the sky, none for plain. */
+    static boolean glass(SharedPreferences choices) {
+        return GLASS.equals(backdrop(choices));
+    }
+
+    /** sky_intensity for a backdrop: the theme's for the shapes, a visible sky for the sky, none otherwise. */
     static int skyIntensity(String backdrop, int themeIntensity, boolean dark) {
         if (SKY.equals(backdrop)) {
             if (themeIntensity > 0) return themeIntensity;
             return dark ? SKY_INTENSITY_DARK : SKY_INTENSITY_LIGHT;
         }
-        return PLAIN.equals(backdrop) ? 0 : themeIntensity;
+        return SHAPES.equals(backdrop) ? themeIntensity : 0;
     }
 }

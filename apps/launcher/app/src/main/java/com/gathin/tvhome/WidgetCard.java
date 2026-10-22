@@ -29,6 +29,8 @@ public final class WidgetCard extends FrameLayout {
     private final Paint outline = new Paint(Paint.ANTI_ALIAS_FLAG);
     /** An empty slot's fill: the screen's own surface, so the backdrop shapes do not show through. */
     private final Paint hole = new Paint(Paint.ANTI_ALIAS_FLAG);
+    /** Liquid Glass in place of the fill; null in the other looks. */
+    private GlassDrawable glass;
     private final float density;
     /** An empty slot (Add widget): an outlineVariant outline at rest, a normal card while focused. */
     private boolean ghost;
@@ -112,7 +114,8 @@ public final class WidgetCard extends FrameLayout {
     void setPalette(Palette p) {
         fill.setColor(p.surfaceContainer);
         outline.setColor(p.outlineVariant);
-        hole.setColor(p.surface);
+        hole.setColor(p.glass ? 0 : p.surface);
+        glass = p.glass ? new GlassDrawable(p, Shapes.TILE_FOCUSED * density, density) : null;
         invalidate();
     }
 
@@ -132,6 +135,11 @@ public final class WidgetCard extends FrameLayout {
             float half = outline.getStrokeWidth() / 2f;
             c.drawRoundRect(inset, inset, w - inset, h - inset, radius, radius, hole);
             c.drawRoundRect(inset + half, inset + half, w - inset - half, h - inset - half, radius - half, radius - half, outline);
+            return;
+        }
+        if (glass != null) {
+            glass.setBounds(Math.round(inset), Math.round(inset), Math.round(w - inset), Math.round(h - inset));
+            glass.draw(c);
             return;
         }
         c.drawRoundRect(inset, inset, w - inset, h - inset, radius, radius, fill);

@@ -576,7 +576,7 @@ public class AppAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     void setPalette(Palette p) {
         palette = p;
         nameColor = p.onSurface;
-        tileColor = p.surfaceContainerHigh;
+        tileColor = p.glass ? GlassDrawable.tint(p) : p.surfaceContainerHigh;
         if (recyclerView == null) return;
         for (int i = 0; i < recyclerView.getChildCount(); i++) {
             RecyclerView.ViewHolder vh = recyclerView.getChildViewHolder(recyclerView.getChildAt(i));

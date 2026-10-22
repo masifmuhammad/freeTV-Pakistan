@@ -227,6 +227,7 @@
     <string name="look_backdrop_shapes">Hình khối Expressive</string>
     <string name="look_backdrop_sky">Bầu trời theo giờ trong ngày</string>
     <string name="look_backdrop_plain">Nền trơn</string>
+    <string name="look_backdrop_glass">Liquid Glass</string>
     <string name="look_backdrop_wallpaper">Hình nền của theme</string>
     <string name="settings_group_screensaver">Bảo vệ màn hình</string>
     <string name="screensaver_after">Bật sau</string>

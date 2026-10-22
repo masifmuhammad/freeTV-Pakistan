@@ -26,6 +26,10 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
     private final Paint band = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint edge = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF rect = new RectF();
+    /** Liquid Glass: the scheme it was built for and its radius; the glass is rebuilt when either changes. */
+    private Palette glassPalette;
+    private GlassDrawable glass;
+    private float glassRadius;
 
     DockDecoration(int dockSize, float density) {
         this.dockSize = dockSize;
@@ -42,6 +46,8 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
     void setPalette(Palette p) {
         band.setColor(Palette.alpha(p.surfaceContainerHigh, BAND_ALPHA));
         edge.setColor(Palette.alpha(p.outlineVariant, EDGE_ALPHA));
+        glassPalette = p.glass ? p : null;
+        glass = null;
     }
 
     @Override
@@ -71,6 +77,16 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
         float column = (parent.getWidth() - parent.getPaddingLeft() - parent.getPaddingRight()) / (float) dockSize;
         int shift = Math.round((dockSize - tiles) * column / 2f);
         return rtl ? -shift : shift;
+    }
+
+    private void drawGlass(Canvas c, float radius) {
+        if (glass == null || glassRadius != radius) {
+            glass = new GlassDrawable(glassPalette, radius, density);
+            glassRadius = radius;
+        }
+        glass.setBounds(Math.round(rect.left), Math.round(rect.top), Math.round(rect.right),
+                Math.round(rect.bottom));
+        glass.draw(c);
     }
 
     /** rtl_app_grid: the grid lays out right to left, so the tiles move left. */
@@ -106,6 +122,10 @@ public class DockDecoration extends RecyclerView.ItemDecoration {
         rect.inset(-pad, -pad);
         // Concentric corners: outer radius = inner radius + padding.
         float radius = AppAdapter.cornerRadius(cardWidth, density, Shapes.TILE_REST) + pad;
+        if (glassPalette != null) {
+            drawGlass(c, radius);
+            return;
+        }
         c.drawRoundRect(rect, radius, radius, band);
         float half = edge.getStrokeWidth() / 2f;
         rect.inset(half, half);

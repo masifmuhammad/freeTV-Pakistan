@@ -22,7 +22,7 @@ Locales: English and Vietnamese only.
 
 - Motion and shape: `Motion` (expressive spring tokens), `Shapes`, `Expressive`, `FocusIndicator`, `GlassView` (springs' model), `LabelReveal`, `MenuHighlight`, `ShelfHighlight`, `SpringItemAnimator` (Edit Home), `SideSheet`, `FocusScrollView` (side sheets: every
   press moves focus one row, the row is kept centred on a spring).
-- Colour and skin: `Palette` (Tonal Spot from `background_color` or wallpaper), `M3Skin` (styles views by `android:tag`), `M3Switch`, `M3Progress`, `ShapeBadge`, `SettingsBanner`.
+- Colour and skin: `Palette` (Tonal Spot from `background_color` or wallpaper; `glass` for Liquid Glass), `GlassDrawable` and `GlassBackdrop` (Liquid Glass: tint, sheen and rim over a soft colour field painted once, no blur), `M3Skin` (styles views by `android:tag`), `M3Switch`, `M3Progress`, `ShapeBadge`, `SettingsBanner`.
 - Home content: `HomeGrid` (full height; the header floats over its top `underlap()`, and rows scrolled under it fade into `headerScrim`), `AppAdapter`, `Order`, `DockSlots`, `DockDecoration`, `GridNavigation`, `LibraryApps`, `AppLibraryDialog`.
 - Widgets: `WidgetShelf`, `WidgetCard`, `Weather` and `AirQuality` (Open-Meteo; the place from ipwho.is or geojs.io), `CpuMeter` (cpuidle in sysfs, since `/proc/stat` is hidden; `/proc/uptime` without cpuidle; else `AdbCpuFeed`, /proc/stat through `LocalAdb` once the owner turns the CPU line on), `LunarCalendar`, `Shamsi`.
 - Network pill: `SpeedTest` (Cloudflare `speed.cloudflare.com`, only when asked from the Wi-Fi menu).

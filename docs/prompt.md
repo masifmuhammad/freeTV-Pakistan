@@ -8,10 +8,13 @@ Finish is done.
 
 ## Prepare
 
-- Clone `https://github.com/kienmai160598/freeTV` unless you are already in it, and read
-  `AGENTS.md` and `docs/troubleshooting.md`.
+- Clone `https://github.com/masifmuhammad/freeTV-Pakistan` (the Pakistan edition of freeTV) unless
+  you are already in it, and read `AGENTS.md`, `README.md` and `docs/troubleshooting.md`.
 - Needs Go 1.27+ for `scripts/tvctl`, plus JDK 17 and Android SDK 34 for the launcher. Install what is
-  missing or tell the owner how.
+  missing or tell the owner how. Without Go or `make` (often on Windows), use `adb` directly: build
+  with `apps/launcher/gradlew assembleRelease` and run the `adb` lines in README's Install section,
+  which do what `make install` does.
+- Keep the owner's backups, keystores and notes out of the repo (a `local/` folder is gitignored).
 
 ## Connect
 
@@ -63,8 +66,12 @@ Finish is done.
   `app_keys`, `settings_key_keycodes` and reinstall with `--input-key-service` /
   `--home-key-service`. No Input button: Launcher settings → Menu button opens Inputs. While an
   HDMI input plays, the TV's keys must reach its player, or CEC hands the device back to the TV.
-- Walk the owner through Launcher settings: colour, backdrop, screensaver time and clock style,
-  motion, widgets (each widget's own settings), Edit Home.
+- Walk the owner through Launcher settings: colour, backdrop (Liquid Glass is the Apple-style one),
+  light or dark, screensaver time and clock style, motion, widgets (each widget's own settings: the
+  weather card's city, which the prayer times follow), their name for the greeting, Edit Home.
+- Volume: ask the owner to press the remote's volume key once; it must move one step, and holding it
+  must keep repeating. Two steps means a key-filtering accessibility service is handing volume keys
+  back (see `HomeKeyService.isVolumeKey`).
 
 ## Finish
 
